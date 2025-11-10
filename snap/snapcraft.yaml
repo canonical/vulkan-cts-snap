@@ -9,33 +9,37 @@ version: '1.0'
 summary: Khronos OpenCL Conformance Test Suite
 description: |
   Baseline snap for the Khronos OpenCL CTS. Builds the test_conformance
-  runner from source via CMake and ships an executable for running tests.
+  tests from source via CMake and ships an executable for running tests.
 
 grade: devel
 confinement: devmode
 
 apps:
-  cts:
-    command: bin/test_conformance
+  test:
+    command: test
     plugs:
       - opengl            # GPU access on many platforms
       - hardware-observe  # Inspect devices
       - home              # Read/write logs
-      - removable-media   # Optional: if you store datasets/logs externally
       - network           # Optional: some runners fetch data/plugins
 
 environment:
-  # Help dynamic linking inside the snap
-  LD_LIBRARY_PATH: "$SNAP/usr/lib:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET:$LD_LIBRARY_PATH"
-  # If you ship an ICD loader inside the snap, you may also need to point to ICD files.
-  # OPENCL_ICD_FILENAMES: "$SNAP/etc/OpenCL/vendors/*.icd"
+  LD_LIBRARY_PATH: "$SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH"
 
 parts:
+  test-conformance:
+    source: bin/
+    plugin: dump
+    stage:
+      - test
+
   opencl-cts:
     plugin: nil
     source: https://github.com/KhronosGroup/OpenCL-CTS.git
     source-branch: v2024-02-27-00
     source-type: git
+    after:
+      - test-conformance
     build-packages:
       - build-essential
       - cmake
@@ -50,19 +54,12 @@ parts:
       -  ocl-icd-libopencl1
     override-build: |
       set -eux
-      cmake -S "$SNAPCRAFT_PART_SRC" -B build \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCL_INCLUDE_DIR=/usr/include/ \
-        -DCL_LIB_DIR=/usr/lib/aarch64-linux-gnu/ \
-        -DSPIRV_INCLUDE_DIR=/usr/include/
-      cmake --build build --parallel 4
-      install -d "$SNAPCRAFT_PART_INSTALL/bin"
-      cp build/bin/test_conformance "$SNAPCRAFT_PART_INSTALL/bin/"
+      cmake -S "$SNAPCRAFT_PART_SRC" -DCL_INCLUDE_DIR=/usr/include/CL -DCL_LIB_DIR=/usr/lib/  -DOPENCL_LIBRARIES=OpenCL
+      cmake --build . --config Release
+      
+      craftctl default
+      mkdir "${CRAFT_PART_INSTALL}/usr/bin"
+      cp "${CRAFT_PROJECT_DIR}/bin/test" "${CRAFT_PART_INSTALL}/usr/bin/test"
 
-# Notes:
-# - This baseline expects OpenCL ICDs/drivers on the host. Running in 'devmode' simplifies access.
-# - If you need NVIDIA/AMD vendor stacks inside the snap, you may have to:
-#   * consume content snaps (e.g., CUDA) or
-#   * ship vendor libs and corresponding .icd files under $SNAP/etc/OpenCL/vendors.
-# - For strict confinement you’ll likely need additional interfaces (and possibly content snaps) depending on GPU/driver.
-
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/bin/"
+      cp -r "${SNAPCRAFT_PART_BUILD}/test_conformance" "${CRAFT_PART_INSTALL}/usr/bin/"
