@@ -1,5 +1,6 @@
 name: opencl-cts
 base: core24
+confinement: classic
 platforms:
   amd64:
     build-on: [amd64]
@@ -11,9 +12,6 @@ description: |
   Baseline snap for the Khronos OpenCL CTS. Builds the test_conformance
   tests from source via CMake and ships an executable for running tests.
 
-grade: devel
-confinement: devmode
-
 apps:
   test:
     command: test
@@ -22,9 +20,8 @@ apps:
       - hardware-observe  # Inspect devices
       - home              # Read/write logs
       - network           # Optional: some runners fetch data/plugins
-
-environment:
-  LD_LIBRARY_PATH: "$SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH"
+    environment:
+      LD_LIBRARY_PATH: "/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH"
 
 parts:
   test-conformance:
