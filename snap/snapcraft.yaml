@@ -1,4 +1,4 @@
-name: opencl-cts
+name: vulkan-cts
 base: core24
 confinement: classic
 lint:
@@ -9,10 +9,10 @@ platforms:
     build-on: [amd64]
   arm64:
     build-on: [amd64, arm64]
-version: '2024-02-27-00'
-summary: Khronos OpenCL Conformance Test Suite
+version: '1.4.5'
+summary: Khronos Vulkan Conformance Test Suite
 description: |
-  Baseline snap for the Khronos OpenCL CTS. Builds the test_conformance
+  Baseline snap for the Khronos Vulkan CTS. Builds the test_conformance
   tests from source via CMake and ships an executable for running tests.
 
 apps:
@@ -34,29 +34,39 @@ parts:
     stage:
       - list_tests
 
-  opencl-cts:
+  vulkan-cts:
     plugin: nil
-    source: https://github.com/KhronosGroup/OpenCL-CTS.git
-    source-branch: v$SNAPCRAFT_PROJECT_VERSION
+    source: https://github.com/KhronosGroup/VK-GL-CTS.git
+    source-branch: vulkan-cts-$SNAPCRAFT_PROJECT_VERSION
     source-type: git
     build-attributes:
       - enable-patchelf
     build-packages:
       - build-essential
       - cmake
-      - git
+      - python3-pip
+      - meson
       - pkg-config
-      - python3
-      - python3-yaml
-      - opencl-headers
-      - ocl-icd-opencl-dev
-      - spirv-headers
-    stage-packages:
-      -  ocl-icd-libopencl1
+      - libpng-dev
+      - libvulkan-dev
+      - mesa-common-dev
+      - python3-lxml
     override-build: |
       set -eux
-      cmake -S "$SNAPCRAFT_PART_SRC" -DCL_INCLUDE_DIR=/usr/include/CL -DCL_LIB_DIR=/usr/lib/  -DOPENCL_LIBRARIES=OpenCL
-      cmake --build . --config Release
+
+      python3 external/fetch_sources.py
+      mkdir build && cd build
+
+      # Different archs need different buildflags
+      if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ]; then
+          CMAKE_CLANG_FLAGS=-m64
+      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ]; then
+          CMAKE_CLANG_FLAGS=-march=armv8-a
+      fi
+
+      cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=$CMAKE_CLANG_FLAGS -DCMAKE_CXX_FLAGS=$CMAKE_CLANG_FLAGS
+      # 64GB RAM wasn't enough for -j. Add nproc
+      make -j`nproc`
       
       mkdir -p "${CRAFT_PART_INSTALL}/usr/bin/"
       cp -r "${SNAPCRAFT_PART_BUILD}/test_conformance" "${CRAFT_PART_INSTALL}/usr/bin/"
