@@ -16,12 +16,20 @@ snap install --classic --dangerous vulkan-cts_1.0_<your_arch>.snap
 ```
 
 # Run
-To list possible tests, run:
+
+## List available test caselists
 ```
 vulkan-cts.list-tests
 ```
 
-Then run your chosen test from the previous list like this:
+## Run tests
+
+Run a specific test case:
 ```
-vulkan-cts.test basic/test_basic
+vulkan-cts.test dEQP-VK.info.build
+```
+
+Or run tests from a mustpass caselist:
+```
+vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt
 ```

@@ -1,8 +1,30 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Please pass the file path within the test_conformance directory"
+    echo "Usage: vulkan-cts.test <test-spec>"
+    echo ""
+    echo "Examples:"
+    echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.build"
+    echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
+    echo "  vulkan-cts.test dEQP-VK.info.build"
     exit 1
 fi
 
-bash -c "${SNAP}/usr/bin/test_conformance/$1"
+# Create a working directory for test results
+WORK_DIR="${HOME}/.vulkan-cts"
+mkdir -p "${WORK_DIR}"
+cd "${WORK_DIR}"
+
+# Parse the argument and run deqp-vk accordingly
+if [[ "$1" == --caselist=* ]]; then
+    # Extract the caselist path
+    CASELIST_PATH="${1#--caselist=}"
+    # Run with caselist from the snap's data directory
+    "${SNAP}/usr/bin/deqp-vk" --deqp-caselist-file="${SNAP}/usr/share/vulkan-cts/${CASELIST_PATH}"
+elif [[ "$1" == --deqp-case=* ]]; then
+    # Pass through as-is
+    "${SNAP}/usr/bin/deqp-vk" "$1"
+else
+    # Assume it's a bare test case name
+    "${SNAP}/usr/bin/deqp-vk" --deqp-case="$1"
+fi

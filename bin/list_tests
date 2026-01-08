@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# List all test options in the test_conformance dir
-find $SNAP/usr/bin/test_conformance/ \
--type f \
--executable \
--name test_* \
--exec bash -c 'echo "${1#${SNAP}/usr/bin/test_conformance/}"' _ {} \;
+echo "Available mustpass caselist files:"
+echo ""
+find "${SNAP}/usr/share/vulkan-cts/mustpass" -name "*.txt" 2>/dev/null | while read -r file; do
+    # Strip the snap prefix and share directory to show relative path
+    echo "  ${file#${SNAP}/usr/share/vulkan-cts/}"
+done
+echo ""
+echo "Usage examples:"
+echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
+echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.build"

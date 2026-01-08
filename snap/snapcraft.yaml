@@ -12,8 +12,8 @@ platforms:
 version: '1.4.5'
 summary: Khronos Vulkan Conformance Test Suite
 description: |
-  Baseline snap for the Khronos Vulkan CTS. Builds the test_conformance
-  tests from source via CMake and ships an executable for running tests.
+  Baseline snap for the Khronos Vulkan CTS. Builds the deqp-vk
+  test binary from source via CMake and ships an executable for running tests.
 
 apps:
   test:
@@ -51,6 +51,14 @@ parts:
       - libvulkan-dev
       - mesa-common-dev
       - python3-lxml
+    stage-packages:
+      - libgl1
+      - libvulkan1
+      - libpng16-16t64
+      - libx11-6
+      - libxcb1
+      - libxext6
+      - libwayland-client0
     override-build: |
       set -eux
 
@@ -67,6 +75,12 @@ parts:
       cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=$CMAKE_CLANG_FLAGS -DCMAKE_CXX_FLAGS=$CMAKE_CLANG_FLAGS
       # 64GB RAM wasn't enough for -j. Add nproc
       make -j`nproc`
-      
+
       mkdir -p "${CRAFT_PART_INSTALL}/usr/bin/"
-      cp -r "${SNAPCRAFT_PART_BUILD}/test_conformance" "${CRAFT_PART_INSTALL}/usr/bin/"
+      cp "${SNAPCRAFT_PART_BUILD}/build/external/vulkancts/modules/vulkan/deqp-vk" "${CRAFT_PART_INSTALL}/usr/bin/"
+
+      # Copy required data files and mustpass lists
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/share/vulkan-cts/"
+      cp -r "${SNAPCRAFT_PART_BUILD}/external/vulkancts/data" "${CRAFT_PART_INSTALL}/usr/share/vulkan-cts/" || true
+      cp -r "${SNAPCRAFT_PART_BUILD}/build/external/vulkancts/modules/vulkan/vulkan" "${CRAFT_PART_INSTALL}/usr/share/vulkan-cts/" || true
+      cp -r "${SNAPCRAFT_PART_BUILD}/external/vulkancts/mustpass" "${CRAFT_PART_INSTALL}/usr/share/vulkan-cts/" || true
