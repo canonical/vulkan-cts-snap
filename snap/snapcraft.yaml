@@ -44,13 +44,18 @@ parts:
     build-packages:
       - build-essential
       - cmake
+      - gcc-aarch64-linux-gnu
+      - g++-aarch64-linux-gnu
       - python3-pip
       - meson
       - pkg-config
       - libpng-dev
+      - libglvnd-dev
       - libvulkan-dev
       - mesa-common-dev
       - python3-lxml
+      - libxcb1-dev
+      - libx11-dev
     stage-packages:
       - libgl1
       - libvulkan1
@@ -68,13 +73,58 @@ parts:
       # Different archs need different buildflags; only set arch flags
       # when building natively to avoid passing host-incompatible -march.
       CMAKE_CLANG_FLAGS=""
+      CMAKE_C_COMPILER=""
+      CMAKE_CXX_COMPILER=""
+      CMAKE_SYSTEM_PROCESSOR=""
       if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
           CMAKE_CLANG_FLAGS=-m64
       elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "arm64" ]; then
           CMAKE_CLANG_FLAGS=-march=armv8-a
+      elif [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && [ "$CRAFT_ARCH_BUILD_ON" == "amd64" ]; then
+          CMAKE_CLANG_FLAGS=-march=armv8-a
+          CMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+          CMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+          CMAKE_SYSTEM_PROCESSOR=aarch64
+          dpkg --add-architecture arm64
+          if [ -f /etc/apt/sources.list ]; then
+            sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          fi
+          for f in /etc/apt/sources.list.d/*.list; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              *arm64.list) continue ;;
+            esac
+            if ! grep -q "ubuntu-ports" "$f"; then
+              sed -i 's/^deb /deb [arch=amd64] /' "$f"
+            fi
+          done
+          for f in /etc/apt/sources.list.d/*.sources; do
+            [ -f "$f" ] || continue
+            if ! grep -q "ubuntu-ports" "$f"; then
+              if grep -q "^Architectures:" "$f"; then
+                sed -i 's/^Architectures:.*/Architectures: amd64/' "$f"
+              else
+                sed -i '/^URIs:/a Architectures: amd64' "$f"
+              fi
+            fi
+          done
+          printf '%s\n' \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse" \
+            "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse" \
+            > /etc/apt/sources.list.d/arm64.list
+          apt-get update
+          apt-get install -y libxcb1-dev:arm64 libx11-dev:arm64 libglvnd-dev:arm64
+          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
       fi
 
-      cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=$CMAKE_CLANG_FLAGS -DCMAKE_CXX_FLAGS=$CMAKE_CLANG_FLAGS
+      cmake .. -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_FLAGS="$CMAKE_CLANG_FLAGS" \
+        -DCMAKE_CXX_FLAGS="$CMAKE_CLANG_FLAGS" \
+        ${CMAKE_C_COMPILER:+-DCMAKE_C_COMPILER=$CMAKE_C_COMPILER} \
+        ${CMAKE_CXX_COMPILER:+-DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER} \
+        ${CMAKE_SYSTEM_PROCESSOR:+-DCMAKE_SYSTEM_PROCESSOR=$CMAKE_SYSTEM_PROCESSOR}
       # 64GB RAM wasn't enough for -j. Add nproc
       make -j`nproc`
 
