@@ -12,7 +12,7 @@ snapcraft pack
 # Install
 
 ```
-snap install --classic --dangerous vulkan-cts_1.0_<your_arch>.snap
+snap install --dangerous vulkan-cts_1.0_<your_arch>.snap
 ```
 
 # Run

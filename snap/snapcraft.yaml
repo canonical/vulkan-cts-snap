@@ -1,6 +1,6 @@
 name: vulkan-cts
 base: core24
-confinement: classic
+confinement: strict
 lint:
   ignore:
     - metadata
@@ -10,6 +10,7 @@ platforms:
   arm64:
     build-on: [amd64, arm64]
 version: '1.4.5'
+license: Apache-2.0
 summary: Khronos Vulkan Conformance Test Suite
 description: |
   Baseline snap for the Khronos Vulkan CTS. Builds the deqp-vk
