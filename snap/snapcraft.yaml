@@ -16,9 +16,18 @@ description: |
   Baseline snap for the Khronos Vulkan CTS. Builds the deqp-vk
   test binary from source via CMake and ships an executable for running tests.
 
+plugs:
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    default-provider: mesa-2404
+
 apps:
   test:
     command: test
+    plugs:
+      - opengl
+      - gpu-2404
   list-tests:
     command: list_tests
 

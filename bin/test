@@ -10,6 +10,18 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Set up Vulkan ICD and libraries from gpu-2404 content interface
+if [ -d "${SNAP}/gpu-2404" ]; then
+    case "${SNAP_ARCH}" in
+        amd64) GPU_ARCH=x86_64;  ARCH_TRIPLE=x86_64-linux-gnu ;;
+        arm64) GPU_ARCH=aarch64; ARCH_TRIPLE=aarch64-linux-gnu ;;
+        *)     GPU_ARCH="${SNAP_ARCH}"; ARCH_TRIPLE="${SNAP_ARCH}-linux-gnu" ;;
+    esac
+    export VK_ICD_FILENAMES
+    VK_ICD_FILENAMES=$(ls "${SNAP}/gpu-2404/usr/share/vulkan/icd.d/"*"${GPU_ARCH}"*.json 2>/dev/null | tr '\n' ':')
+    export LD_LIBRARY_PATH="${SNAP}/gpu-2404/usr/lib/${ARCH_TRIPLE}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+
 # Create a working directory for test results
 WORK_DIR="${HOME}/.vulkan-cts"
 mkdir -p "${WORK_DIR}"
@@ -40,8 +52,12 @@ run_deqp() {
 if [[ "$1" == --caselist=* ]]; then
     # Extract the caselist path
     CASELIST_PATH="${1#--caselist=}"
-    # Run with caselist from the snap's data directory
-    run_deqp "${SNAP}/usr/bin/deqp-vk" --deqp-caselist-file="${SNAP}/usr/share/vulkan-cts/${CASELIST_PATH}"
+    CASELIST_FULL="${SNAP}/usr/share/vulkan-cts/${CASELIST_PATH}"
+    # deqp resolves sub-caselist files relative to CWD, so cd to the caselist's directory
+    cd "$(dirname "${CASELIST_FULL}")"
+    run_deqp "${SNAP}/usr/bin/deqp-vk" \
+        --deqp-caselist-file="${CASELIST_FULL}" \
+        --deqp-log-filename=/dev/null
 elif [[ "$1" == --deqp-case=* ]]; then
     # Pass through as-is
     run_deqp "${SNAP}/usr/bin/deqp-vk" "$1"

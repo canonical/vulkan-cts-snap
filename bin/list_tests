@@ -2,7 +2,7 @@
 
 echo "Available mustpass caselist files:"
 echo ""
-find "${SNAP}/usr/share/vulkan-cts/mustpass" -name "*.txt" 2>/dev/null | while read -r file; do
+find "${SNAP}/usr/share/vulkan-cts/mustpass" -name "*.txt" 2>/dev/null | grep -v "/vksc" | while read -r file; do
     # Strip the snap prefix and share directory to show relative path
     echo "  ${file#${SNAP}/usr/share/vulkan-cts/}"
 done
