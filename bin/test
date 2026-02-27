@@ -25,43 +25,20 @@ fi
 # Create a working directory for test results
 WORK_DIR="${HOME}/.vulkan-cts"
 mkdir -p "${WORK_DIR}"
-cd "${WORK_DIR}"
 
-run_deqp() {
-    # Stream output unchanged but override exit based on the final "Failed:" summary count.
-    "$@" 2>&1 | awk '
-        {
-            print
-            if ($1 == "Failed:") {
-                split($2, parts, "/")
-                failed = parts[1]
-                found = 1
-            }
-        }
-        END {
-            if (found && failed + 0 > 0) {
-                exit 1
-            }
-            exit 0
-        }
-    '
-    return $?
-}
+# deqp resolves data paths relative to CWD, so run from the data root.
+cd "${SNAP}/usr/share/vulkan-cts"
 
-# Parse the argument and run deqp-vk accordingly
 if [[ "$1" == --caselist=* ]]; then
-    # Extract the caselist path
     CASELIST_PATH="${1#--caselist=}"
     CASELIST_FULL="${SNAP}/usr/share/vulkan-cts/${CASELIST_PATH}"
-    # deqp resolves sub-caselist files relative to CWD, so cd to the caselist's directory
-    cd "$(dirname "${CASELIST_FULL}")"
-    run_deqp "${SNAP}/usr/bin/deqp-vk" \
+    "${SNAP}/usr/bin/deqp-vk" \
         --deqp-caselist-file="${CASELIST_FULL}" \
-        --deqp-log-filename=/dev/null
+        --deqp-log-filename="${WORK_DIR}/$(basename "${CASELIST_PATH}" .txt).qpa"
 elif [[ "$1" == --deqp-case=* ]]; then
-    # Pass through as-is
-    run_deqp "${SNAP}/usr/bin/deqp-vk" "$1"
+    "${SNAP}/usr/bin/deqp-vk" "$1" \
+        --deqp-log-filename="${WORK_DIR}/TestResults.qpa"
 else
-    # Assume it's a bare test case name
-    run_deqp "${SNAP}/usr/bin/deqp-vk" --deqp-case="$1"
+    "${SNAP}/usr/bin/deqp-vk" --deqp-case="$1" \
+        --deqp-log-filename="${WORK_DIR}/TestResults.qpa"
 fi
