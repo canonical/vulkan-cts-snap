@@ -39,16 +39,26 @@ for arg in "$@"; do
 done
 
 if [ "$HAS_TESTSPEC" = false ]; then
-    echo "Usage: vulkan-cts.test [--no-confinement] <test-spec> [deqp-args...]"
+    echo "Usage: vulkan-cts.test [--no-confinement] <test-spec> [args passed to deqp-vk]"
     echo ""
-    echo "  --no-confinement  Skip snap-bundled GPU/Vulkan drivers and use host"
-    echo "                    drivers exclusively. Intended for use with the"
-    echo "                    Checkbox framework when snap sandboxing is removed."
+    echo "  <test-spec> is one of:"
+    echo "    --deqp-case=<pattern>   Run tests matching a case name or glob patterni from caselist files"
+    echo "                            (e.g. dEQP-VK.info.* or dEQP-VK.info.build)"
+    echo "    --caselist=<path>       Run all tests listed in a caselist file."
+    echo "                            Use a path as shown by 'vulkan-cts.list-tests'."
+    echo "    <pattern>               Shorthand for --deqp-case=<pattern>"
+    echo ""
+    echo "  --no-confinement          Skip snap-bundled GPU/Vulkan drivers and use host"
+    echo "                            drivers exclusively. Intended for use with the"
+    echo "                            Checkbox framework when snap sandboxing is removed."
+    echo ""
+    echo "  Any additional options are passed directly to deqp-vk (the underlying"
+    echo "  Vulkan CTS runner). Run 'deqp-vk --help' inside the snap for the full list."
     echo ""
     echo "Examples:"
-    echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.build"
-    echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
     echo "  vulkan-cts.test dEQP-VK.info.build"
+    echo "  vulkan-cts.test --deqp-case=dEQP-VK.info.*"
+    echo "  vulkan-cts.test --caselist=mustpass/main/vk-default/api.txt"
     exit 1
 fi
 
