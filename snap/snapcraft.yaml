@@ -25,13 +25,31 @@ plugs:
 apps:
   test:
     command: test
+    command-chain:
+      - bin/gpu-2404-wrapper
     plugs:
       - opengl
       - gpu-2404
   list-tests:
     command: list_tests
+  vulkaninfo:
+    command: usr/bin/vulkaninfo
+    command-chain:
+      - bin/gpu-2404-wrapper
+    plugs:
+      - opengl
+      - gpu-2404
+      - x11
 
 parts:
+  gpu-2404-wrapper:
+    source: bin/
+    plugin: dump
+    organize:
+      gpu-2404-wrapper: bin/gpu-2404-wrapper
+    stage:
+      - bin/gpu-2404-wrapper
+
   test-conformance:
     source: bin/
     plugin: dump
@@ -74,6 +92,7 @@ parts:
       - libxcb1
       - libxext6
       - libwayland-client0
+      - vulkan-tools
     override-build: |
       set -eux
 
