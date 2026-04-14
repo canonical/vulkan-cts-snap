@@ -81,7 +81,11 @@ if [ "$NO_CONFINEMENT" = "true" ]; then
         echo "Install libvulkan1 (or equivalent) on the host before using this mode."
         exit 1
     fi
-    export LD_PRELOAD="${HOST_VK}"
+    # libwayland-client must also be preloaded: the host's Vulkan ICD
+    # (libvulkan_intel.so etc.) uses symbols (e.g. wl_fixes_interface) absent
+    # from the older libwayland bundled in the snap.
+    HOST_WL="/usr/lib/${ARCH_TRIPLE}/libwayland-client.so.0"
+    export LD_PRELOAD="${HOST_WL}:${HOST_VK}"
     export LD_LIBRARY_PATH="/usr/lib/${ARCH_TRIPLE}:/usr/lib"
     echo "Host Vulkan loader: ${HOST_VK}"
 else
